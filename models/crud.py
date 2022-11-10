@@ -2,10 +2,34 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
 
 from . import models, schemas
+from utils.base import get_token_prices_in_usd
+
 
 def create_contract_transactions(db: Session, list_transactions: list):
+    result_list = []
+
+    # Getting token prices
+    token_prices = get_token_prices_in_usd()
+
     for transaction in list_transactions[::-1]:
         try:
+
+            # First check if the transaction is not already added to database
+            exists = db.query(models.ContractTransactions).filter(
+                models.ContractTransactions.block_number==transaction.get('blockNumber')
+            ).first()
+
+            if exists:
+                continue
+
+            amount = float(transaction.get('amount'))
+            if transaction.get('functionName').startswith('icsa'):
+                price = token_prices.get('icosa').get('usd')
+            else:
+                price = token_prices.get('hedron').get('usd')
+
+            approximate_amount_usd = amount * price
+
             data = {
                 "token_symbol": transaction.get("token_symbol"),
                 "block_number": transaction.get("blockNumber"),
@@ -29,18 +53,41 @@ def create_contract_transactions(db: Session, list_transactions: list):
                 "method_id": transaction.get("methodId"),
                 "function_name": transaction.get("functionName"),
                 "amount": transaction.get("amount"),
+                "approximate_amount_usd": approximate_amount_usd,
+                "token_price": price
             }
 
             new_contract_tx = models.ContractTransactions(**data)
             db.add(new_contract_tx)
             db.commit()
             db.refresh(new_contract_tx)
+            result_list.append(new_contract_tx)
         except SQLAlchemyError as e:
             print('ERROR saving the following transaction: ' + str(data))
             print(str(e))
             continue
-    return
+    return result_list
 
 def get_last_contract_transaction(db: Session):
     return db.query(models.ContractTransactions).order_by(
-        models.ContractTransactions.id.desc()).first()        
+        models.ContractTransactions.id.desc()).first()
+
+def query_by_function_name(db: Session, function_name: str):
+    return db.query(models.ContractTransactions).filter(
+        models.ContractTransactions.function_name.match(f'{function_name}%')).order_by(
+            models.ContractTransactions.id.desc()).all()
+
+def get_transactions_by_function_name(db: Session, function_name: str = None):
+    if function_name:
+        result = query_by_function_name(db, function_name.value)
+
+        return {function_name.value: result}
+
+    result = {}
+    for function_name in schemas.FunctionsName:
+        data = query_by_function_name(db, function_name.value)
+        result.update({
+            function_name: data
+        })
+
+    return result

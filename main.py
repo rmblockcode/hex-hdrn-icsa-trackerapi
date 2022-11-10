@@ -1,8 +1,7 @@
 import config
 import requests
 
-from typing import Union
-
+from typing import Union, Optional
 from fastapi import FastAPI, Depends
 from fastapi import Path, Query
 
@@ -47,7 +46,10 @@ contracts = {
 def read_root():
     return {"HEX": "HDRN and ICSA tracker"}
 
-@app.get("/transaction_list/{token_symbol}")
+@app.get(
+    "/transaction_list/{token_symbol}",
+    response_model=list[schemas.ContractTransactions]
+)
 def transaction_list(
     token_symbol: str = Path(
         ...,
@@ -56,18 +58,26 @@ def transaction_list(
         min_length=1,
         max_length=10,
         ),
+    start_block: Optional[str] = Query(
+        None,
+        title="Start block",
+        description="Start block to perform the search. Use this field only the first execution",
+        min_length=1,
+        max_length=20
+        ),
     db: Session = Depends(get_db)
 ):
 
-    # Getting the last queried block
-    import pudb; pudb.set_trace()
-    last_tx = crud.get_last_contract_transaction(db)
-    last_block = last_tx.block_number if last_tx else '0'
+    if not start_block:
+        # Getting the last queried block
+        last_tx = crud.get_last_contract_transaction(db)
+        start_block = last_tx.block_number if last_tx else '0'
+
     params = {
         'module': 'account',
         'action': 'txlist',
         'address': contracts.get(token_symbol).get('contract_address'),
-        'startblock': last_block,
+        'startblock': start_block,
         'sort': 'desc'
     }
 
@@ -75,20 +85,16 @@ def transaction_list(
 
     functions_to_track = contracts.get(
         token_symbol).get('functions_to_track')
-    decimals = contracts.get(
-        token_symbol).get('decimals')
+    decimals = contracts.get(token_symbol).get('decimals') * -1
     result_trx = []
 
     if success:
-        # If it's not the first execution then remove the first row
-        # because it's already stored in database
-        if last_block != '0':
-            result = result[:-1]
         for res in result:
             if  res.get('functionName') in functions_to_track:
                 # Getting amount of ERC-20 token transferred
                 input = res.get('input')
-                amount = int(input.split('00000000')[-1], 16)
+                amount = str(int(input.split('00000000')[-1], 16))
+                amount = f'{amount[:decimals]}.{amount[decimals:]}'
 
                 res.update({'amount': str(amount)})
 
@@ -98,7 +104,23 @@ def transaction_list(
                 result_trx.append(res)
 
     # Saving transactions
-    crud.create_contract_transactions(db, result_trx)
-    response = {'result': result_trx}
+    new_transactions = crud.create_contract_transactions(db, result_trx)
+    return new_transactions
 
-    return response
+
+@app.get("/stats_by_functions_name")
+def stats_by_functions_name(
+    function_name: Optional[schemas.FunctionsName] = Query(
+        None,
+        title="Function name",
+        description="Name of the function to be queried",
+        example="icsaStakeStart"
+        ),
+    db: Session = Depends(get_db)
+):
+    import pudb; pudb.set_trace()
+    import discord_notify as dn
+    URL = 'https://discord.com/api/webhooks/1040029833616437338/GWrsRj07BejhidloMINTgvOeJwoHvrU3-qm26dvy-XrFCYS15lZBqYnll2PbMs9HUw_f'
+    notifier = dn.Notifier(URL)
+    notifier.send("Test message", print_message=False)
+    return crud.get_transactions_by_function_name(db, function_name)

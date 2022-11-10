@@ -21,3 +21,14 @@ def get_etherscan_request(params):
     except Exception as e:
         print(str(e))
         return False, {}
+
+def get_token_prices_in_usd():
+    endpoint_url = config.COINGECKO_API + \
+        'simple/price?ids=hedron,icosa&vs_currencies=usd'
+
+    try:
+        response = requests.get(endpoint_url)
+        return response.json()
+    except Exception as e:
+        print('Error getting prices from coingecko: ' + str(e))
+        raise e

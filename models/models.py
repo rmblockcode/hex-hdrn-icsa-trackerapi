@@ -39,3 +39,5 @@ class ContractTransactions(TimeStampMixin, Base):
     method_id = Column(String)
     function_name = Column(String, index=True)
     amount = Column(String)
+    approximate_amount_usd = Column(Float)
+    token_price = Column(Float)
