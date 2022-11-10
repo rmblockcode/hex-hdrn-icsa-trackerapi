@@ -91,3 +91,6 @@ def get_transactions_by_function_name(db: Session, function_name: str = None):
         })
 
     return result
+
+def get_discord_channels(db: Session):
+    return db.query(models.DiscordChannels).filter_by(active=True).all()

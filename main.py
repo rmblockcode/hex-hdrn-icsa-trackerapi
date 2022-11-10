@@ -11,6 +11,7 @@ from models import models, schemas, crud
 from models.database import SessionLocal, engine
 
 from utils.base import get_etherscan_request
+from utils.notifications import discord_notifications
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -105,6 +106,9 @@ def transaction_list(
 
     # Saving transactions
     new_transactions = crud.create_contract_transactions(db, result_trx)
+
+    # Creating notifications
+    discord_notifications(db, new_transactions)
     return new_transactions
 
 
@@ -118,9 +122,4 @@ def stats_by_functions_name(
         ),
     db: Session = Depends(get_db)
 ):
-    import pudb; pudb.set_trace()
-    import discord_notify as dn
-    URL = 'https://discord.com/api/webhooks/1040029833616437338/GWrsRj07BejhidloMINTgvOeJwoHvrU3-qm26dvy-XrFCYS15lZBqYnll2PbMs9HUw_f'
-    notifier = dn.Notifier(URL)
-    notifier.send("Test message", print_message=False)
     return crud.get_transactions_by_function_name(db, function_name)

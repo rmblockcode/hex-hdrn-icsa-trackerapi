@@ -4,7 +4,7 @@ import config
 def get_etherscan_request(params):
     try:
         params.update({
-            'apikey': config.API_KEY,
+            'apikey': config.ETHERSCAN_API_KEY,
         })
 
         response = requests.get(

@@ -41,3 +41,11 @@ class ContractTransactions(TimeStampMixin, Base):
     amount = Column(String)
     approximate_amount_usd = Column(Float)
     token_price = Column(Float)
+
+
+class DiscordChannels(Base):
+    __tablename__ = "discord_channels"
+    id = Column(Integer, primary_key=True, index=True)
+    channel_unique_name = Column(String)
+    webhook_url = Column(String)
+    active = Column(Boolean, default=True)
