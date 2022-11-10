@@ -14,7 +14,7 @@ def create_contract_transactions(db: Session, list_transactions: list):
     for transaction in list_transactions[::-1]:
         try:
 
-            # First check if the transaction is not already added to database
+            # First check if the transaction is not already added into the database
             exists = db.query(models.ContractTransactions).filter(
                 models.ContractTransactions.block_number==transaction.get('blockNumber')
             ).first()
