@@ -1,6 +1,9 @@
 import requests
 import config
 
+def run_local_request():
+    requests.get(config.API_URL + 'transaction_list/icsa')
+
 def get_etherscan_request(params):
     try:
         params.update({

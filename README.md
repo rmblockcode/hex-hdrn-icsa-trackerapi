@@ -7,6 +7,9 @@
     export SQLALCHEMY_DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/token_trackerdb
     export COINGECKO_API=https://api.coingecko.com/api/v3/
 
+    # API URL: For crontab purpose
+    export API_URL=http://127.0.0.1:8001/
+
 
 ### Execute Migrations:
 
