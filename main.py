@@ -5,17 +5,27 @@ from typing import Union, Optional
 from fastapi import FastAPI, Depends
 from fastapi import Path, Query
 
+# Schedule iport s
+from fastapi_amis_admin.admin.settings import Settings
+from fastapi_amis_admin.admin.site import AdminSite
+from datetime import date
+from fastapi_scheduler import SchedulerAdmin
+#
+
 from sqlalchemy.orm import Session
 from models import models, schemas, crud
 
 from models.database import SessionLocal, engine
 
-from utils.base import get_etherscan_request
+from utils.base import get_etherscan_request, run_local_request
 from utils.notifications import discord_notifications
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Create `AdminSite` instance
+site = AdminSite(settings=Settings(database_url_async='sqlite+aiosqlite:///amisadmin.db'))
 
 # Dependency
 def get_db():
@@ -123,3 +133,25 @@ def stats_by_functions_name(
     db: Session = Depends(get_db)
 ):
     return crud.get_transactions_by_function_name(db, function_name)
+
+
+############################################
+
+# Create an instance of the scheduled task scheduler `SchedulerAdmin`
+scheduler = SchedulerAdmin.bind(site)
+
+# Add scheduled tasks, refer to the official documentation: https://apscheduler.readthedocs.io/en/master/
+# use when you want to run the job at fixed intervals of time
+@scheduler.scheduled_job('interval', seconds=60)
+def interval_task():
+    print('Executing transaction list...')
+    run_local_request()
+    print('Process Finished')
+
+
+@app.on_event("startup")
+async def startup():
+    # Mount the background management system
+    site.mount_app(app)
+    # Start the scheduled task scheduler
+    scheduler.start()
