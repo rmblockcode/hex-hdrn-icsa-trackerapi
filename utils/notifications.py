@@ -26,7 +26,8 @@ def discord_notifications(db: Session, new_transactions):
             if transaction.function_name.startswith('icsa'):
                 counter_icosa += 1
                 message_icosa += message
-            elif transaction.function_name.startswith('hdrn'):
+            elif transaction.function_name.startswith('hdrn') or \
+                transaction.function_name.startswith('loanLiquidateBid'):
                 counter_hedron += 1
                 message_hedron += message
 

@@ -17,7 +17,7 @@ from models import models, schemas, crud
 
 from models.database import SessionLocal, engine
 
-from utils.base import get_etherscan_request, run_local_request
+from utils import base
 from utils.notifications import discord_notifications
 
 models.Base.metadata.create_all(bind=engine)
@@ -35,23 +35,6 @@ def get_db():
     finally:
         db.close()
 
-contracts = {
-    'hdrn': {
-        'contract_address': '0x3819f64f282bf135d62168c1e513280daf905e06',
-        'functions_to_track': [''],
-        'decimals': 9
-    },
-    'icsa': {
-        'contract_address': '0xfc4913214444aF5c715cc9F7b52655e788A569ed',
-        'functions_to_track': [
-            'icsaStakeStart(uint256 amount)',
-            'icsaStakeAddCapital(uint256 amount)',
-            'hdrnStakeStart(uint256 amount)',
-            'hdrnStakeAddCapital(uint256 amount)'
-        ],
-        'decimals': 9
-    }
-}
 
 @app.get("/")
 def read_root():
@@ -87,16 +70,16 @@ def transaction_list(
     params = {
         'module': 'account',
         'action': 'txlist',
-        'address': contracts.get(token_symbol).get('contract_address'),
+        'address': config.contracts.get(token_symbol).get('contract_address'),
         'startblock': start_block,
         'sort': 'desc'
     }
 
-    success, result = get_etherscan_request(params)
+    success, result = base.get_etherscan_request(params)
 
-    functions_to_track = contracts.get(
+    functions_to_track = config.contracts.get(
         token_symbol).get('functions_to_track')
-    decimals = contracts.get(token_symbol).get('decimals') * -1
+    decimals = config.contracts.get(token_symbol).get('decimals') * -1
     result_trx = []
 
     if success:
@@ -104,8 +87,7 @@ def transaction_list(
             if  res.get('functionName') in functions_to_track:
                 # Getting amount of ERC-20 token transferred
                 input = res.get('input')
-                amount = str(int(input.split('00000000')[-1], 16))
-                amount = f'{amount[:decimals]}.{amount[decimals:]}'
+                amount = base.get_etc20_transferred(input, decimals)
 
                 res.update({'amount': str(amount)})
 
@@ -142,10 +124,10 @@ scheduler = SchedulerAdmin.bind(site)
 
 # Add scheduled tasks, refer to the official documentation: https://apscheduler.readthedocs.io/en/master/
 # use when you want to run the job at fixed intervals of time
-@scheduler.scheduled_job('interval', seconds=60)
+#@scheduler.scheduled_job('interval', seconds=60)
 def interval_task():
     print('Executing transaction list...')
-    run_local_request()
+    base.run_local_request()
     print('Process Finished')
 
 

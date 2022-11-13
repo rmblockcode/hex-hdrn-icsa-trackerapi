@@ -35,3 +35,8 @@ def get_token_prices_in_usd():
     except Exception as e:
         print('Error getting prices from coingecko: ' + str(e))
         raise e
+
+
+def get_etc20_transferred(data, decimals):
+    amount = str(int(data.split('00000000')[-1], 16))
+    return f'{amount[:decimals]}.{amount[decimals:]}'
