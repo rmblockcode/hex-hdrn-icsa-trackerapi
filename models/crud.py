@@ -75,8 +75,10 @@ def create_contract_transactions(db: Session, list_transactions: list):
             continue
     return result_list
 
-def get_last_contract_transaction(db: Session):
-    return db.query(models.ContractTransactions).order_by(
+def get_last_contract_transaction(db: Session, token_symbol):
+    return db.query(models.ContractTransactions).filter(
+        models.ContractTransactions.token_symbol==token_symbol
+    ).order_by(
         models.ContractTransactions.id.desc()).first()
 
 def query_by_function_name(db: Session, function_name: str):

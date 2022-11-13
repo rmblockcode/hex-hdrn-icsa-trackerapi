@@ -64,7 +64,7 @@ def transaction_list(
 
     if not start_block:
         # Getting the last queried block
-        last_tx = crud.get_last_contract_transaction(db)
+        last_tx = crud.get_last_contract_transaction(db, token_symbol)
         start_block = last_tx.block_number if last_tx else '0'
 
     params = {
