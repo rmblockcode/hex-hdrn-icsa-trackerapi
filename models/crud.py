@@ -35,8 +35,8 @@ def create_contract_transactions(db: Session, list_transactions: list):
             min_amount = config.contracts.get(
                 transaction.get('token_symbol')).get('min_amount_in_usd_to_track')
 
-            # Only store transactions with amounts in usd >= than configure in the contracto            
-            if min_amount and approximate_amount_usd >= min_amount:
+            # Only store transactions with amounts in usd >= than configure in the contract
+            if not min_amount or (min_amount and approximate_amount_usd >= min_amount):
                 data = {
                     "token_symbol": transaction.get("token_symbol"),
                     "block_number": transaction.get("blockNumber"),
