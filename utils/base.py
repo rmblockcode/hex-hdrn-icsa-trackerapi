@@ -1,8 +1,8 @@
 import requests
 import config
 
-def run_local_request():
-    requests.get(config.API_URL + 'transaction_list/icsa')
+def run_local_request(token_symbol):
+    requests.get(config.API_URL + 'transaction_list/' + token_symbol)
 
 def get_etherscan_request(params):
     try:

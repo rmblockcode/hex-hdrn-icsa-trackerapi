@@ -124,10 +124,11 @@ scheduler = SchedulerAdmin.bind(site)
 
 # Add scheduled tasks, refer to the official documentation: https://apscheduler.readthedocs.io/en/master/
 # use when you want to run the job at fixed intervals of time
-#@scheduler.scheduled_job('interval', seconds=60)
+@scheduler.scheduled_job('interval', seconds=60)
 def interval_task():
     print('Executing transaction list...')
-    base.run_local_request()
+    base.run_local_request('icsa')
+    base.run_local_request('hdrn')
     print('Process Finished')
 
 
